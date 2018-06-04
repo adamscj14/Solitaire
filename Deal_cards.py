@@ -3,6 +3,7 @@
 import random
 import pandas as pd
 import sys
+import encodings
 
 class Game:
 
@@ -95,6 +96,8 @@ class Game:
     def board_render(self, player):
         renderMatrix = []
         endRow = 0
+
+        suitRenderDict = {"(S)": "\u2660", "(D)": "\u2662", "(H)": "\u2661", "(C)": "\u2663"}
         for row in self.boardMatrix:
             if row == ["-", "-", "-", "-", "-", "-", "-"]:
                 endRow += 1
@@ -111,11 +114,47 @@ class Game:
                 for pos in renderRow:
                     if pos[0:2] == "H:":
                         renderRow[posCount] = "?"
+                    elif len(pos) > 1:
+                        #suitRendering = suitRenderDict[row[posCount][-3:]]
+                        #renderRow[posCount] = u"{}{}".format(row[posCount][:-3], suitRenderDict[row[posCount][-3:]])
+                        #renderRow[posCount] = row[posCount][:-3] + u"{}".format(suitRendering)
+                        denom = row[posCount][:-3]
+                        suit = row[posCount][-3:]
+                        if suit == '(H)':
+                            renderRow[posCount] = denom + u'\u2661'
+                        elif suit == '(S)':
+                            renderRow[posCount] = denom + u'\u2660'
+                        elif suit == '(D)':
+                            renderRow[posCount] = denom + u'\u2662'
+                        elif suit == '(C)':
+                            renderRow[posCount] = denom + u'\u2663'
+                    elif len(pos) == 1 and pos not in ["-", "X"]:
+                        if pos == 'H':
+                            renderRow[posCount] = u'\u2661'
+                        elif pos == 'S':
+                            renderRow[posCount] = u'\u2660'
+                        elif pos == 'D':
+                            renderRow[posCount] = u'\u2662'
+                        elif pos == 'C':
+                            renderRow[posCount] = u'\u2663'
                     posCount += 1
 
                 renderMatrix.append(renderRow)
         print "---------------------------------------------------------"
-        print "FLOP: {}".format(self.flop)
+        sys.stdout.write("FLOP: ")
+        for card in self.flop:
+            denom = card[:-3]
+            suit = card[-3:]
+            if suit == '(H)':
+                sys.stdout.write(denom + u'\u2661')
+            elif suit == '(S)':
+                sys.stdout.write(denom + u'\u2660')
+            elif suit == '(D)':
+                sys.stdout.write(denom + u'\u2662')
+            elif suit == '(C)':
+                sys.stdout.write(denom + u'\u2663')
+        sys.stdout.flush()
+        print
         print pd.DataFrame(renderMatrix)
 
         if not player:
