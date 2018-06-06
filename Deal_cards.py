@@ -1,9 +1,8 @@
 
-
 import random
 import pandas as pd
 import sys
-import encodings
+import numpy as np
 
 class Game:
 
@@ -121,38 +120,40 @@ class Game:
                         denom = row[posCount][:-3]
                         suit = row[posCount][-3:]
                         if suit == '(H)':
-                            renderRow[posCount] = denom + u'\u2661'
+                            renderRow[posCount] = ' '+denom + u'\u2661'
                         elif suit == '(S)':
-                            renderRow[posCount] = denom + u'\u2660'
+                            renderRow[posCount] = ' '+denom + u'\u2660'
                         elif suit == '(D)':
-                            renderRow[posCount] = denom + u'\u2662'
+                            renderRow[posCount] = ' '+denom + u'\u2662'
                         elif suit == '(C)':
-                            renderRow[posCount] = denom + u'\u2663'
+                            renderRow[posCount] = ' '+denom + u'\u2663'
+
                     elif len(pos) == 1 and pos not in ["-", "X"]:
                         if pos == 'H':
-                            renderRow[posCount] = u'\u2661'
+                            renderRow[posCount] = ' '+u'\u2661'+''
                         elif pos == 'S':
-                            renderRow[posCount] = u'\u2660'
+                            renderRow[posCount] = ' '+u'\u2660'+''
                         elif pos == 'D':
-                            renderRow[posCount] = u'\u2662'
+                            renderRow[posCount] = ' '+u'\u2662'+''
                         elif pos == 'C':
-                            renderRow[posCount] = u'\u2663'
+                            renderRow[posCount] = ' '+u'\u2663'+''
                     posCount += 1
 
                 renderMatrix.append(renderRow)
+
         print "---------------------------------------------------------"
         sys.stdout.write("FLOP: ")
         for card in self.flop:
             denom = card[:-3]
             suit = card[-3:]
             if suit == '(H)':
-                sys.stdout.write(denom + u'\u2661')
+                sys.stdout.write(denom + u'\u2661 ')
             elif suit == '(S)':
-                sys.stdout.write(denom + u'\u2660')
+                sys.stdout.write(denom + u'\u2660 ')
             elif suit == '(D)':
-                sys.stdout.write(denom + u'\u2662')
+                sys.stdout.write(denom + u'\u2662 ')
             elif suit == '(C)':
-                sys.stdout.write(denom + u'\u2663')
+                sys.stdout.write(denom + u'\u2663 ')
         sys.stdout.flush()
         print
         print pd.DataFrame(renderMatrix)
