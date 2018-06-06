@@ -8,18 +8,11 @@ class Game:
 
     def __init__(self, deck):
 
-
         self.deck = deck
-        boardMat = self.initial_board_setup()
-
-        trash = []
-        flop = ["NA", "NA", "NA"]
-        self.flop = flop
+        self.flop = ["NA", "NA", "NA"]
         self.new_flop()
-
-        self.boardMatrix = boardMat
-
-        self.trash = trash
+        self.boardMatrix = self.initial_board_setup()
+        self.trash = []
 
 
     def initial_board_setup(self):
@@ -164,15 +157,19 @@ class Game:
 
     def move_board_card(self, userLocationInput, userDestinationInput):
 
-        move = CardMovement(self, userLocationInput, userDestinationInput)
-        if move.startLoc == None or move.destLoc == None:
-            return None
+        try:
+            move = CardMovement(self, userLocationInput, userDestinationInput)
+            move.make_move()
+        except Exception:
+            return
+
 
     def game_over(self):
         if self.boardMatrix[0][3] == "K(H)" and self.boardMatrix[0][4] == "K(S)" and self.boardMatrix[0][5] == "K(C)" and self.boardMatrix[0][5] == "K(D)":
             return True
         else:
             return False
+
 
 class CardMovement:
 
@@ -182,41 +179,30 @@ class CardMovement:
 
         self.userStartLocInput = location
         self.userDestLocInput = destination
-        startLoc = self.ensure_valid_loc(start = True)
-        destLoc = self.ensure_valid_loc(start = False)
 
-        self.startLoc = startLoc
-        self.destLoc = destLoc
+        self.startLoc = self.ensure_valid_loc(start = True)
+        self.destLoc = self.ensure_valid_loc(start = False)
 
-        if self.startLoc == None or self.destLoc == None:
-            return None
+        if self.startLoc is None or self.destLoc is None:
+            raise Exception("Movement Object Failed")
 
         startCards = self.find_start_cards()
-        if startCards == None:
-            return None
+        if startCards is None:
+            raise Exception("Movement Object Failed")
 
-        startCard = startCards[0]
-        startCardStack = startCards[1]
-        self.startCard = startCard
-        self.startCardStack = startCardStack
+        self.startCard = startCards[0]
+        self.startCardStack = startCards[1]
 
-        destCard = self.find_dest_card()
-        self.destCard = destCard
+        self.destCard = self.find_dest_card()
 
-        if self.destCard == None:
-            return None
+        if self.destCard is None:
+            raise Exception("Movement Object Failed")
 
         # find the specifics of the card [denomination, suit, color]
-        startCardDetails = self.find_card_details(start = True)
-        destCardDetails = self.find_card_details(start = False)
-        self.startCardDetails = startCardDetails
-        print startCardDetails
-        self.destCardDetails = destCardDetails
-        print destCardDetails
-        self.cardOrder = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+        self.startCardDetails = self.find_card_details(start = True)
+        self.destCardDetails = self.find_card_details(start = False)
 
-        if self.check_move_validity() == False:
-            return None
+        self.cardOrder = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
         self.make_move()
 
@@ -371,6 +357,9 @@ class CardMovement:
 
     def make_move(self):
 
+        if self.check_move_validity() == False:
+            raise Exception("This move is not valid")
+
         ## remove Flop card
         if self.startLoc == "FLOP":
             self.current_game.flop.pop(0)
@@ -453,7 +442,7 @@ class CardMovement:
                 self.current_game.boardMatrix[self.startLoc[0] - 1][self.startLoc[1]] = cardInScope[2:]
 
 
-class Card_Deck:
+class CardDeck:
 
     def __init__(self):
         deck = self.create_deck()
@@ -489,20 +478,17 @@ class Card_Deck:
     def recycle_deck(self, newDeck):
         self.deck = newDeck
 
-
+## Maybe move this class to be a function of Game
 class PlayGame:
 
     def __init__(self):
 
-        deck = Card_Deck()
+        deck = CardDeck()
         deck.shuffle_deck()
-        self.deck = deck
         print "Deck Shuffled"
-        game = Game(self.deck)
-        self.game = game
+        self.game = Game(deck)
 
-        player = self.game_for_player()
-        self.player = player
+        self.player = self.game_for_player()
         self.game.board_render(self.player)
         self.mainMenu = self.main_menu()
 
