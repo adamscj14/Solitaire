@@ -6,18 +6,19 @@ import numpy as np
 
 class Game:
 
-    def __init__(self, deck):
+    def __init__(self, player):
 
-        self.deck = deck
+        self.deck = CardDeck()
         self.flop = ["NA", "NA", "NA"]
-        self.new_flop()
         self.boardMatrix = self.initial_board_setup()
         self.trash = []
-
+        self.player = player
 
     def initial_board_setup(self):
 
-        self.deck.shuffle_deck
+        self.new_flop()
+        self.deck.shuffle_deck()
+
         boardMatrix = [["X", "X", "X", "H", "S", "C", "D"],
                  ["X", "X", "X", "X", "X", "X", "X"],
                  ["-", "X", "X", "X", "X", "X", "X"],
@@ -56,6 +57,63 @@ class Game:
         print "Board created"
 
         return boardMatrix
+
+    def main_menu(self):
+
+        choice = None
+
+        self.board_render(self.player)
+
+        while choice != 4:
+
+            if self.game_over() == True:
+                print "Hurray, you have won! Congratulations"
+                sys.exit()
+
+            choice = raw_input('''Main Menu:
+            1: Move Card
+            2: New Flop
+            3: New Game
+            4: Quit
+            ''')
+
+            try:
+                choice = int(choice)
+
+            except ValueError:
+                print "Error: Invalid choice! Please try again."
+                continue
+
+            if choice == 1:
+                ## Card To Move
+                startInput = raw_input(
+                    "Which card would you like to move? Please give the row and the column (row,column):")
+                ## Destination Card
+                destInput = raw_input(
+                    "Where would you like to move the card? Please give the row and the column (row,column):")
+
+                moveInput = [startInput, destInput]
+
+                self.move_board_card(moveInput[0], moveInput[1])
+                self.board_render(self.player)
+
+            elif choice == 2:
+                self.new_flop()
+                self.board_render(self.player)
+
+            elif choice == 3:
+                print "-" * 30
+                print "NEW GAME"
+                print "-"*30
+                play = Game(self.player)
+                play.main_menu()
+
+            elif choice == 4:
+                print "End Game. Thanks for playing!"
+                sys.exit()
+
+            else:
+                print "Error: Invalid choice! Please try again."
 
     def new_flop(self):
         # clear current flop
@@ -162,7 +220,6 @@ class Game:
             move.make_move()
         except Exception:
             return
-
 
     def game_over(self):
         if self.boardMatrix[0][3] == "K(H)" and self.boardMatrix[0][4] == "K(S)" and self.boardMatrix[0][5] == "K(C)" and self.boardMatrix[0][5] == "K(D)":
@@ -478,82 +535,35 @@ class CardDeck:
     def recycle_deck(self, newDeck):
         self.deck = newDeck
 
-## Maybe move this class to be a function of Game
-class PlayGame:
 
-    def __init__(self):
-
-        deck = CardDeck()
-        deck.shuffle_deck()
-        print "Deck Shuffled"
-        self.game = Game(deck)
-
-        self.player = self.game_for_player()
-        self.game.board_render(self.player)
-        self.mainMenu = self.main_menu()
+def main():
+    # Initialize the player
+    player = game_for_player()
+    # Initialize the game
+    play = Game(player)
+    # Begin the loop to run the game
+    play.main_menu()
 
 
-    def game_for_player(self):
-        validInput = False
-        while validInput != True:
-            player = raw_input("Is this game for a super-user? (Y/N)\n")
-            if player == "Y":
-                player = False
-                print "Welcome to the game, super-user!"
-                validInput = True
+def game_for_player():
+    validInput = False
+    while validInput != True:
+        player = raw_input("Is this game for a super-user? (Y/N)\n")
+        if player == "Y":
+            player = False
+            print "Welcome to the game, super-user!"
+            validInput = True
 
-            elif player == "N":
-                player = True
-                print "Welcome to the game, normal player!"
-                validInput = True
+        elif player == "N":
+            player = True
+            print "Welcome to the game, normal player!"
+            validInput = True
 
-            else:
-                print "Invalid input, please try again."
+        else:
+            print "Invalid input, please try again."
 
-        return player
-
-
-    def main_menu(self):
-        choice = None
-
-        while choice != 4:
-
-            if self.game.game_over() == True:
-                print "Hurray, you have won! Congratulations"
-                choice = 5
-
-            choice = input('''Main Menu:
-            1: Move Card
-            2: New Flop
-            3: New Game
-            4: Quit
-            ''')
-
-            if choice == 1:
-                ## TODO Need to clean this up
-                ## Card To Move
-                startInput = raw_input("Which card would you like to move? Please give the row and the column (row,column):")
-                ## Destination Card
-                destInput = raw_input("Where would you like to move the card? Please give the row and the column (row,column):")
-
-                moveInput = [startInput, destInput]
-
-                self.game.move_board_card(moveInput[0], moveInput[1])
-                self.game.board_render(self.player)
-
-            elif choice == 2:
-                self.game.new_flop()
-                self.game.board_render(self.player)
-
-            elif choice == 3:
-                play = PlayGame()
-
-            elif choice == 4:
-                print "End Game. Thanks for playing!"
-                sys.exit()
-
-            else:
-                print "Error: Invalid choice! Please try again."
+    return player
 
 
-play = PlayGame()
+if __name__ == "__main__":
+    main()
