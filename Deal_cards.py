@@ -103,9 +103,9 @@ class Game:
                 self.board_render(self.player)
 
             elif choice == 3:
-                print "-" * 30
+                print "-" * 20
                 print "NEW GAME"
-                print "-"*30
+                print "-"*20
                 play = Game(self.player)
                 play.main_menu()
 
@@ -204,7 +204,7 @@ class Game:
 
                 renderMatrix.append(renderRow)
 
-        print "---------------------------------------------------------"
+        print "-" *30
         sys.stdout.write("FLOP: ")
         for card in self.flop:
             denom = card[:-3]
@@ -228,9 +228,7 @@ class Game:
     def move_board_card(self, userLocationInput, userDestinationInput):
 
         try:
-            print "attempting to instantiate move class"
             move = CardMovement(self, userLocationInput, userDestinationInput)
-            print "move class instantiated"
             move.make_move()
         except MovementError:
             print "Error: Movement failed."
@@ -260,20 +258,17 @@ class CardMovement:
         self.startLoc = None
         self.destLoc = None
 
-        print "checking that the locs are valid"
         self.validStartLoc = self.ensure_valid_loc(start = True)
-        print "validStartLoc:", self.validStartLoc
         self.validDestLoc = self.ensure_valid_loc(start = False)
-        print "validDestLoc:", self.validDestLoc
 
         if self.validStartLoc is None or self.validDestLoc is None:
-            print "Locations are not considered valid"
+            #print "Locations are not considered valid"
             raise MovementError("Movement Object Failed")
 
         print "locs are valid"
 
         if self.startIsPile and self.destIsPile:
-            print "Both the start card and dest are piles"
+            #print "Both the start card and dest are piles"
             raise MovementError("Movement Object Failed")
 
         self.startCard = None
@@ -286,26 +281,19 @@ class CardMovement:
         self.populate_card_info()
 
         if self.startCard is None or self.destCard is None:
-            print "Start Card or Dest Card do not exist"
+            #print "Start Card or Dest Card do not exist"
             raise MovementError("Movement Object Failed")
 
-        print "self.destLoc:", self.destLoc
 
     def populate_card_info(self):
         # If the destination is the pile, then first I need to find the start cards
         if self.destIsPile == True:
-            print "finding start cards"
             self.find_start_cards()
-            print "finding dest cards"
             self.find_dest_card()
-            print "all cards found"
 
         else:
-            print "finding dest cards"
             self.find_dest_card()
-            print "finding start cards"
             self.find_start_cards()
-            print "all cards found"
 
     def ensure_valid_loc(self, start):
 
@@ -318,8 +306,6 @@ class CardMovement:
         elif start == False:
             inLoc = self.userDestLocInput
 
-        print "inLoc:", inLoc
-
         if inLoc.lower() in flopCommands:
             if start == True:
                 return "FLOP"
@@ -331,7 +317,6 @@ class CardMovement:
             if start == False:
                 self.destIsPile = True
                 self.destLoc = "PILE"
-                print "dest is pile"
                 return True
 
             else:
@@ -339,11 +324,9 @@ class CardMovement:
                 suitPile = inLoc[2]
                 startLoc = self.pileSuitDict[suitPile]
                 self.startLoc = startLoc
-                print "start is pile"
                 return True
 
         else:
-            print "checking the col index info"
             if len(inLoc) > 1:
                 print "Error: Malformed input. Please try again."
                 return
@@ -377,7 +360,7 @@ class CardMovement:
                 self.startCard = self.current_game.flop[0]
 
             except IndexError:
-                print "Error: There are no cards in the flop. Please try again."
+                #print "Error: There are no cards in the flop. Please try again."
                 raise MovementError("Find Start Cards Failed")
 
             self.startCardStack = []
@@ -426,7 +409,6 @@ class CardMovement:
                     else:
 
                         self.startCard = card
-                        print "self.startCard:", card
                         self.find_card_details(start=True)
                         if self.check_move_validity(supressPrint=True) == True:
                             self.startLoc[0] = row
@@ -475,7 +457,6 @@ class CardMovement:
             card = self.startCard
         elif start == False:
             card = self.destCard
-            print card
             if len(card) == 1:
                 cardColor = cardSuitDict[card]
 
@@ -545,8 +526,6 @@ class CardMovement:
 
     def make_move(self):
 
-        print "Time to make move!"
-
         if self.check_move_validity(supressPrint=False) == False:
             raise MovementError("This move is not valid")
 
@@ -560,8 +539,6 @@ class CardMovement:
             # For Aces and Kings
             if not (rowDestIndex == 0 or (rowDestIndex == 1 and self.startCardDetails[0] == "K")):
                 rowDestIndex += 1
-
-            print "rowDestIndex: ",rowDestIndex
 
             # Change dest locus
             self.current_game.boardMatrix[rowDestIndex][columnDestIndex] = self.startCard
@@ -599,20 +576,15 @@ class CardMovement:
 
             else:
                 cards = [self.startCard] + self.startCardStack
-                print cards
                 destCount = 1
                 startCount = 0
                 if self.destLoc[0] == 1 and self.destCard == "-":
                     destCount -= 1
-                    print "destCount:", destCount
 
                 for card in cards:
 
                     columnDestIndex = self.destLoc[1]
                     rowDestIndex = self.destLoc[0] + destCount
-                    print "columnDestIndex:", columnDestIndex
-                    print "rowDestIndex:",rowDestIndex
-
 
                     columnStartIndex = self.startLoc[1]
                     rowStartIndex = self.startLoc[0] + startCount
@@ -704,7 +676,8 @@ def game_for_player():
 
 def main():
     # Initialize the player
-    player = game_for_player()
+    #player = game_for_player()
+    player = True
     # Initialize the game
     play = Game(player)
     # Begin the loop to run the game
