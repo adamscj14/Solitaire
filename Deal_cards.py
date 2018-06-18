@@ -63,29 +63,28 @@ class Game:
 
         choice = None
 
-        self.board_render(self.player)
+        while 1:
 
-        while choice != 4:
+            self.board_render(self.player)
 
             if self.game_over() == True:
                 print "Hurray, you have won! Congratulations"
                 sys.exit()
 
-            choice = raw_input('''Main Menu:
-            1: Move Card
-            2: New Flop
-            3: New Game
-            4: Quit
-            ''')
+            choice = str(raw_input('''Main Menu:
+            M: Move Card
+            F: New Flop
+            Q: Quit
+            '''))
 
-            try:
-                choice = int(choice)
+            choice = choice.lower()
 
-            except ValueError:
+            if choice not in ["m", "f", "q"]:
                 print "Error: Invalid choice! Please try again."
                 continue
 
-            if choice == 1:
+
+            if choice == "m":
                 ## Card To Move
                 userCardInput = self.get_card_inputs()
 
@@ -96,25 +95,37 @@ class Game:
                 destInput = userCardInput[1]
 
                 self.move_board_card(startInput,destInput)
-                self.board_render(self.player)
 
-            elif choice == 2:
+            elif choice == "f":
                 self.new_flop()
-                self.board_render(self.player)
 
-            elif choice == 3:
-                print "-" * 20
-                print "NEW GAME"
-                print "-"*20
-                play = Game(self.player)
-                play.main_menu()
+            elif choice == "q":
 
-            elif choice == 4:
-                print "End Game. Thanks for playing!"
-                sys.exit()
+                quitMenu = self.main_menu_quit()
+                if quitMenu == True:
+                    sys.exit()
+                else:
+                    continue
 
             else:
                 print "Error: Invalid choice! Please try again."
+
+    def main_menu_quit(self):
+        validInput = False
+        affirmativeList = ["y", "yes"]
+        negativeList = ["n", "no"]
+        while validInput != True:
+            quitCommand = str(raw_input("Are you sure you want to quit? (y/n)\n"))
+
+            if quitCommand.lower() in affirmativeList:
+                print "Exiting game. Thanks for playing!"
+                return True
+
+            elif quitCommand.lower() in negativeList:
+                return False
+
+            else:
+                print "Invalid input, please try again."
 
     def new_flop(self):
         # clear current flop
@@ -265,8 +276,6 @@ class CardMovement:
             #print "Locations are not considered valid"
             raise MovementError("Movement Object Failed")
 
-        print "locs are valid"
-
         if self.startIsPile and self.destIsPile:
             #print "Both the start card and dest are piles"
             raise MovementError("Movement Object Failed")
@@ -283,7 +292,6 @@ class CardMovement:
         if self.startCard is None or self.destCard is None:
             #print "Start Card or Dest Card do not exist"
             raise MovementError("Movement Object Failed")
-
 
     def populate_card_info(self):
         # If the destination is the pile, then first I need to find the start cards
@@ -378,7 +386,7 @@ class CardMovement:
                     if card == "-":
                         if row == 1:
                             print "Error: Given column has no cards to move. Please try again."
-                            return
+                            raise MovementError("Movement Object Failed")
                         else:
                             self.startCard = self.current_game.boardMatrix[row - 1][col]
                             self.startCardStack = []
@@ -397,11 +405,11 @@ class CardMovement:
                         if row == 1:
                             print "Error: This column of the board has no cards to be moved."
                             self.startCard = None
-                            return
+                            raise MovementError("Movement Object Failed")
                         else:
                             print "Error: There are no potential cards to be moved in this column."
                             self.startCard = None
-                            return
+                            raise MovementError("Movement Object Failed")
                     elif card[0] == "H":
                         continue
 
