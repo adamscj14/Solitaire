@@ -1,7 +1,7 @@
 # Solitaire
 Solitaire Game
 
-To play, simply run the "Deal_cards.py" script without any arguments.
+To play, simply run the "play_solitaire_commandline.py" script without any arguments.
 
 Gameplay notes:
   * There definitely might still be a few bugs/kinks to work out
