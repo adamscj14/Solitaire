@@ -9,3 +9,4 @@ Gameplay notes:
 Future directions:
   * Adding graphics and point and click mechanics
   * Hosting game on python server to receive http commands
+  * play_solitataire_gui.py is currently still a work in progress
