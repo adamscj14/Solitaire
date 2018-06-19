@@ -73,13 +73,13 @@ class Game:
 
             choice = str(raw_input('''Main Menu:
             M: Move Card
-            F: New Flop
+            T: Turn New Flop
             Q: Quit
             '''))
 
             choice = choice.lower()
 
-            if choice not in ["m", "f", "q"]:
+            if choice not in ["m", "t", "q"]:
                 print "Error: Invalid choice! Please try again."
                 continue
 
@@ -96,7 +96,7 @@ class Game:
 
                 self.move_board_card(startInput,destInput)
 
-            elif choice == "f":
+            elif choice == "t":
                 self.new_flop()
 
             elif choice == "q":
@@ -168,7 +168,7 @@ class Game:
                 return
 
             else:
-                startInput = "P-{}".format(pileSuit)
+                startInput = "P-{}".format(pileSuit.lower())
 
         ## Destination Card
         destInput = str(raw_input("Where would you like to move the card? Please give a column or pile (p):"))
@@ -360,6 +360,12 @@ class CardMovement:
 
         if self.startIsPile:
             self.startCardStack = []
+            self.startCard = self.current_game.boardMatrix[self.startLoc[0]][self.startLoc[1]]
+            
+            if len(self.startCard) == 1:
+                print "Error: There is no card in the chosen pile."
+                raise MovementError("Find Start Cards Failed")
+
             self.find_card_details(start=True)
             return
 
@@ -554,19 +560,23 @@ class CardMovement:
 
         ## remove pile card
         elif self.startLoc[0] == 0:
+
             if self.startCardDetails[0] == "A":
-                self.current_game.boardMatrix[0][self.destLoc[1]] = self.startCardDetails[1]
+                self.current_game.boardMatrix[0][self.startLoc[1]] = self.startCardDetails[1]
+
             else:
                 newDenom = self.cardOrder[self.cardOrder.index(self.startCardDetails[0])-1]
                 suit = self.startCardDetails[1]
                 newCard = "{}({})".format(newDenom, suit)
-                self.current_game.boardMatrix[0][self.destLoc[1]] = newCard
+                self.current_game.boardMatrix[0][self.startLoc[1]] = newCard
 
-                columnDestIndex = self.destLoc[1]
-                rowDestIndex = self.destLoc[0] + 1
 
-                # Change dest locus
-                self.current_game.boardMatrix[rowDestIndex][columnDestIndex] = self.startCard
+
+            columnDestIndex = self.destLoc[1]
+            rowDestIndex = self.destLoc[0] + 1
+
+            # Change dest locus
+            self.current_game.boardMatrix[rowDestIndex][columnDestIndex] = self.startCard
 
 
         ## remove board cards and move it to a new location
