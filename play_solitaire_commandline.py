@@ -518,8 +518,14 @@ class CardMovement:
                 print "Error: Incompatible card denominations -- this card cannot be moved to the {} pile".format(destCardSuit)
                 return False
 
-        elif self.destLoc[0] == 1 and self.destCard == "-" and self.startCardDetails[0] == "K":
-            return True
+        elif self.destLoc[0] == 1 and self.destCard == "-":
+            if self.startCardDetails[0] == "K":
+                return True
+            else:
+                print "Error: Can only move a King to an empty first row."
+                return False
+
+
 
         elif self.current_game.boardMatrix[self.destLoc[0]+1][self.destLoc[1]] != "-":
             if not supressPrint:
