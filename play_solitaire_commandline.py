@@ -246,7 +246,7 @@ class Game:
             return
 
     def game_over(self):
-        if self.boardMatrix[0][3] == "K(H)" and self.boardMatrix[0][4] == "K(S)" and self.boardMatrix[0][5] == "K(C)" and self.boardMatrix[0][5] == "K(D)":
+        if self.boardMatrix[0][3] == "K(H)" and self.boardMatrix[0][4] == "K(S)" and self.boardMatrix[0][5] == "K(C)" and self.boardMatrix[0][6] == "K(D)":
             return True
         else:
             return False
@@ -579,7 +579,10 @@ class CardMovement:
 
 
             columnDestIndex = self.destLoc[1]
-            rowDestIndex = self.destLoc[0] + 1
+            if self.startCardDetails[0] == "K":
+                rowDestIndex = self.destLoc[0]
+            else:
+                rowDestIndex = self.destLoc[0] + 1
 
             # Change dest locus
             self.current_game.boardMatrix[rowDestIndex][columnDestIndex] = self.startCard
