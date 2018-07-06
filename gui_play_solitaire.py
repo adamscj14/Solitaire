@@ -11,17 +11,18 @@ class Game:
     def __init__(self, player, gameDisplay):
 
         self.deck = CardDeck()
-        self.flop = ["NA", "NA", "NA"]
         self.gameDisplay = gameDisplay
 
+        self.flop = [None, None, None]
         self.boardMatrix = self.initial_board_setup()
+
+
         self.trash = []
         self.player = player
 
     def initial_board_setup(self):
 
         self.deck.shuffle_deck()
-        self.new_flop()
 
         boardMatrix = [
             ["X", "X", "X", "X", "H", "S", "C", "D"],
@@ -51,9 +52,9 @@ class Game:
                 # Set Deck Slot
                 boardMatrix[0][0] = Board_Slot(card=None, row=0, col=0, inDeck=True)
                 # Set Flop
-                boardMatrix[0][1] = Board_Slot(card=None, row=0, col=1, inFlop=True, flopPosition=0)
+                boardMatrix[0][1] = Board_Slot(card=None, row=0, col=3, inFlop=True, flopPosition=2)
                 boardMatrix[0][2] = Board_Slot(card=None, row=0, col=2, inFlop=True, flopPosition=1)
-                boardMatrix[0][3] = Board_Slot(card=None, row=0, col=3, inFlop=True, flopPosition=2)
+                boardMatrix[0][3] = Board_Slot(card=None, row=0, col=1, inFlop=True, flopPosition=0)
                 # Set Piles
                 boardMatrix[0][4] = Board_Slot(card=None, row=0, col=4, inPile=True, pileSuit = "H")
                 boardMatrix[0][5] = Board_Slot(card=None, row=0, col=5, inPile=True, pileSuit = "S")
@@ -80,6 +81,9 @@ class Game:
             rowCount += 1
 
         print "Board created"
+
+        self.flop = [boardMatrix[0][1], boardMatrix[0][2], boardMatrix[0][3]]
+        self.new_flop()
 
         return boardMatrix
 
@@ -153,16 +157,12 @@ class Game:
 
     def new_flop(self):
         # clear current flop
-        posCount = 0
-        for card in self.flop:
-            if card != "NA":
-                self.trash.append(card)
-                self.flop[posCount] = "NA"
+        for loc in self.flop:
+            if loc.card != None:
+                self.trash.append(loc.card)
+                loc.card = None
             else:
                 break
-            posCount += 1
-
-        self.flop = ["NA", "NA", "NA"]
 
         # set new flop
         if self.deck.deck_empty():
@@ -171,13 +171,12 @@ class Game:
             self.trash = []
 
         posCount = 0
-        for pos in self.flop:
+        for loc in self.flop:
+            # if deck is empty
             if self.deck.deck == []:
-                self.flop = [card for card in self.flop if card != "NA"]
                 break
-            newFlopCard = self.deck.deck.pop(0)
-            self.flop[posCount] = newFlopCard
-            posCount += 1
+            newFlopCard = Graphic_Card(self.deck.deck.pop(0))
+            loc.card = newFlopCard
 
     def get_card_inputs(self):
         pileCommands = ["pile", "p"]
@@ -204,6 +203,10 @@ class Game:
         return [startInput, destInput]
 
     def board_render(self, player):
+
+        firstFlop = None
+        secondFlop = None
+        thirdFlop = None
 
         rowCount = 0
         for row in self.boardMatrix:
@@ -739,7 +742,7 @@ class Board_Slot:
 
             if self.inFlop:
                 rectLocX = row1x + xMultiplier +  self.flopPosition * 20
-                rectLocY = 50
+                rectLocY = 15
 
             elif self.inDeck:
                 rectLocX = row1x
