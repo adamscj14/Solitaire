@@ -1,4 +1,3 @@
-
 import random
 import pandas as pd
 import sys
@@ -8,7 +7,7 @@ import time
 
 class Game:
 
-    def __init__(self, player, gameDisplay):
+    def __init__(self, gameDisplay):
 
         self.deck = CardDeck()
         self.gameDisplay = gameDisplay
@@ -16,9 +15,47 @@ class Game:
         self.flop = [None, None, None]
         self.boardMatrix = self.initial_board_setup()
 
-
         self.trash = []
-        self.player = player
+
+    def main_loop(self):
+
+        gameExit = False
+
+        while not gameExit:
+
+            self.event_loop()
+            self.board_render()
+            pygame.time.Clock().tick(60)
+
+    def event_loop(self):
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                print event
+                self.find_button_press_loci(event.pos)
+
+    def find_button_press_loci(self, clickedPos):
+        slotList = []
+        for row in self.boardMatrix:
+            for slot in row:
+                if slot.rect.collidepoint(clickedPos):
+                    slotList.append(slot)
+                    if len(slotList) == 4:
+                        self.evaluate_board_slots_clicked(slotList)
+                        break
+        if slotList == []:
+            return
+        else:
+            self.evaluate_board_slots_clicked(slotList)
+
+
+    def evaluate_board_slots_clicked(self, slotList):
+        if len(slotList) == 1:
+            boardSlot = slotList[0]
+            if boardSlot.inDeck:
+                self.new_flop()
 
     def initial_board_setup(self):
 
@@ -127,39 +164,15 @@ class Game:
             elif choice == "t":
                 self.new_flop()
 
-            elif choice == "q":
-
-                quitMenu = self.main_menu_quit()
-                if quitMenu == True:
-                    sys.exit()
-                else:
-                    continue
-
             else:
                 print "Error: Invalid choice! Please try again."
-
-    def main_menu_quit(self):
-        validInput = False
-        affirmativeList = ["y", "yes"]
-        negativeList = ["n", "no"]
-        while validInput != True:
-            quitCommand = str(raw_input("Are you sure you want to quit? (y/n)\n"))
-
-            if quitCommand.lower() in affirmativeList:
-                print "Exiting game. Thanks for playing!"
-                return True
-
-            elif quitCommand.lower() in negativeList:
-                return False
-
-            else:
-                print "Invalid input, please try again."
 
     def new_flop(self):
         # clear current flop
         for loc in self.flop:
+            print "Current flop"
             if loc.card != None:
-                self.trash.append(loc.card)
+                self.trash.append(loc.card.cardInfo)
                 loc.card = None
             else:
                 break
@@ -168,12 +181,15 @@ class Game:
         if self.deck.deck_empty():
             print "Recycling trash back into deck!"
             self.deck.recycle_deck(self.trash)
+            self.deck.show_deck()
             self.trash = []
 
         posCount = 0
+        print "Pick new flop"
         for loc in self.flop:
             # if deck is empty
-            if self.deck.deck == []:
+            if self.deck.deck_empty():
+                print "deck is empty"
                 break
             newFlopCard = Graphic_Card(self.deck.deck.pop(0))
             loc.card = newFlopCard
@@ -202,15 +218,9 @@ class Game:
 
         return [startInput, destInput]
 
-    def board_render(self, player):
+    def board_render(self):
 
-        firstFlop = None
-        secondFlop = None
-        thirdFlop = None
-
-        rowCount = 0
         for row in self.boardMatrix:
-            columnCount = 0
             for boardSlot in row:
                 boardSlot.show_image(self.gameDisplay)
 
@@ -226,8 +236,8 @@ class Game:
             return
 
     def game_over(self):
-        if self.boardMatrix[0][3] == "K(H)" and self.boardMatrix[0][4] == "K(S)" and\
-                self.boardMatrix[0][5] == "K(C)" and self.boardMatrix[0][5] == "K(D)":
+        if self.boardMatrix[0][4] == "K(H)" and self.boardMatrix[0][5] == "K(S)" and\
+                self.boardMatrix[0][6] == "K(C)" and self.boardMatrix[0][7] == "K(D)":
             return True
         else:
             return False
@@ -645,52 +655,6 @@ class CardDeck:
     def recycle_deck(self, newDeck):
         self.deck = newDeck
 
-
-class MovementError(Exception):
-    pass
-
-
-def game_for_player():
-    validInput = False
-    affirmativeList = ["y", "yes"]
-    negativeList = ["n", "no"]
-    while validInput != True:
-        player = str(raw_input("Is this game for a super-user? (y/n)\n"))
-
-        if player.lower() in affirmativeList:
-            player = False
-            print "Welcome to the game, super-user!"
-            validInput = True
-
-        elif player.lower() in negativeList:
-            player = True
-            print "Welcome to the game, normal player!"
-            validInput = True
-
-        else:
-            print "Invalid input, please try again."
-
-    return player
-
-
-def main():
-    pygame.init()
-
-    # Initialize the player
-    #player = game_for_player()
-    player = True
-    # Initialize the game
-
-    game_loop(player)
-
-    # Begin the loop to run the game
-    #play.main_menu()
-
-
-## card height = 1.42
-## card width = 1
-
-
 class Board_Slot:
 
     def __init__(self, card, row, col, inDeck=False, inPile=None, pileSuit=None, inFlop=False, flopPosition=None):
@@ -720,6 +684,8 @@ class Board_Slot:
         self.deckImage = pygame.image.load('Images/deckCard.png')
         self.size = self.deckImage.get_size()
 
+        self.selectedImage = pygame.image.load('Images/Background_Card.png')
+        self.selected = False
 
         self.rectLocX, self.rectLocY = self.get_display_coords()
 
@@ -780,6 +746,9 @@ class Board_Slot:
             if self.hidden:
                 gameDisplay.blit(self.card.cardBackImage, self.rect)
             else:
+                if self.selected:
+                    gameDisplay.blit(self.selectedImage, self.rect)
+
                 gameDisplay.blit(self.card.suitImage, self.rect)
 
 
@@ -811,7 +780,7 @@ class Graphic_Card:
         }
 
         self.cardInfo = cardInfo
-
+        print cardInfo
         # split cardInfo into the proper information
         cardInfoList = self.cardInfo.strip().split('-')
         print cardInfoList
@@ -820,24 +789,37 @@ class Graphic_Card:
         self.suitImage = pygame.image.load(self.suitImagesDict[self.cardInfo]).convert()
         self.cardBackImage = pygame.image.load('Images/playing_card_back_standard.png').convert()
 
-    def show_image(self, gameDisplay):
-        if self.hidden:
-            gameDisplay.blit(self.cardBackImage, self.cardRect)
-        else:
-            gameDisplay.blit(self.suitImage, self.cardRect)
+class MovementError(Exception):
+    pass
 
 
+def main():
+
+    pygame.init()
+
+    # Set window
+    displayWidth = 800
+    displayHeight = 600
+
+    black = (0, 0, 0)
+    white = (255, 255, 255)
+    red = (255, 0, 0)
+    green = (0, 128, 0)
+
+    gameDisplay = pygame.display.set_mode((displayWidth, displayHeight))
+    gameDisplay.fill(green)
+    pygame.display.set_caption("Solitaire")
+    gameDisplay.set_colorkey(black)
+
+    Game(gameDisplay).main_loop()
+
+    pygame.quit()
+    sys.exit()
+
+## card width = 1
+## card height = 1.53
 
 
-    #
-    # def move_coordinates(self, newX, newY):
-    #     dX = self.rectLocX - newX
-    #     dY = self.rectLocY - newY
-    #
-    #     self.cardRect.move(dX, dY)
-    #
-    #     self.rectLocX = newX
-    #     self.rectLocY = newY
 
 def message_display(text):
     largeText = pygame.font.Font('freesansbold.ttf', 115)
@@ -855,51 +837,6 @@ def message_display(text):
 def text_objects(text, font):
     textSurface = font.render(text, True, black)
     return textSurface, textSurface.get_rect()
-
-def game_loop(player):
-
-    # Set window
-    displayWidth = 800
-    displayHeight = 600
-
-    black = (0, 0, 0)
-    white = (255, 255, 255)
-    red = (255, 0, 0)
-    green = (0, 128, 0)
-
-    gameDisplay = pygame.display.set_mode((displayWidth, displayHeight))
-    gameDisplay.fill(green)
-    pygame.display.set_caption("Solitaire")
-    gameDisplay.set_colorkey(black)
-    clock = pygame.time.Clock()
-
-
-
-    play = Game(player, gameDisplay)
-
-    x = (displayWidth * 0.1)
-    y = (displayHeight * 0.2)
-
-    gameExit = False
-
-    notRendered = True
-
-    while not gameExit:
-        if notRendered:
-            play.board_render(player)
-            notRendered = False
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-
-
-        clock.tick(60)
-
-
-    pygame.quit()
-
-
-
 
 
 if __name__ == "__main__":
