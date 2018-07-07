@@ -14,6 +14,7 @@ class Game:
 
         self.flop = [None, None, None]
         self.boardMatrix = self.initial_board_setup()
+        self.selectedSlot = None
 
         self.trash = []
 
@@ -52,10 +53,78 @@ class Game:
 
 
     def evaluate_board_slots_clicked(self, slotList):
-        if len(slotList) == 1:
-            boardSlot = slotList[0]
-            if boardSlot.inDeck:
-                self.new_flop()
+
+        if slotList[0].boardMatrixRow == 0:
+            if len(slotList) == 1:
+                boardSlot = slotList[0]
+                if boardSlot.inDeck:
+                    self.deselect_slot()
+                    self.new_flop()
+                    return
+
+                elif boardSlot.inPile:
+                    print "pile"
+                    if boardSlot.card != None:
+                        if self.selectedSlot != None:
+                            ##TODO test whether move is appropriate
+                            self.deselect_slot()
+                        else:
+                            self.update_selected_slot(boardSlot)
+                    return
+
+
+            else:
+                for boardSlot in slotList:
+                    if boardSlot.flopPosition == 0:
+                        print "flop"
+                        self.update_selected_slot(boardSlot)
+                        return
+
+
+            '''
+            else:
+                if boardSlot.card != None and not boardSlot.hidden:
+                    if self.selectedSlot == None:
+                        boardSlot.selected = True
+                        self.selectedSlot = boardSlot
+
+                    else:
+                        ## TODO test whether move is appropriate
+                        self.deselect_slot()
+            '''
+        ### Finally check for those slots that are in the rows
+        else:
+            boardSlot = self.find_appropriate_board_card(slotList)
+            if boardSlot is None:
+                return
+            self.update_selected_slot(boardSlot)
+
+
+    def find_appropriate_board_card(self, slotList):
+        ## I want to select out the highest row number that has an uncovered card
+        for boardSlot in reversed(slotList):
+            if boardSlot.card == None:
+                continue
+            elif boardSlot.hidden:
+                continue
+            else:
+                return boardSlot
+
+
+    def update_selected_slot(self, newSlot):
+
+        if self.selectedSlot == newSlot:
+            self.deselect_slot()
+        else:
+            newSlot.selected = True
+            self.selectedSlot = newSlot
+
+
+    def deselect_slot(self):
+        if self.selectedSlot != None:
+            self.selectedSlot.selected = False
+
+        self.selectedSlot = None
 
     def initial_board_setup(self):
 
@@ -684,7 +753,7 @@ class Board_Slot:
         self.deckImage = pygame.image.load('Images/deckCard.png')
         self.size = self.deckImage.get_size()
 
-        self.selectedImage = pygame.image.load('Images/Background_Card.png')
+        self.selectedFrameImage = pygame.image.load('Images/FrameImage.png')
         self.selected = False
 
         self.rectLocX, self.rectLocY = self.get_display_coords()
@@ -746,10 +815,10 @@ class Board_Slot:
             if self.hidden:
                 gameDisplay.blit(self.card.cardBackImage, self.rect)
             else:
-                if self.selected:
-                    gameDisplay.blit(self.selectedImage, self.rect)
-
                 gameDisplay.blit(self.card.suitImage, self.rect)
+                if self.selected:
+                    gameDisplay.blit(self.selectedFrameImage, self.rect)
+
 
 
 class Graphic_Card:
