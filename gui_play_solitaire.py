@@ -21,10 +21,12 @@ class Game:
     def main_loop(self):
 
         gameExit = False
+        green = (0, 128, 0)
 
         while not gameExit:
 
             self.event_loop()
+            self.gameDisplay.fill(green)
             self.board_render()
             pygame.time.Clock().tick(60)
 
@@ -43,9 +45,7 @@ class Game:
             for slot in row:
                 if slot.rect.collidepoint(clickedPos):
                     slotList.append(slot)
-                    if len(slotList) == 4:
-                        self.evaluate_board_slots_clicked(slotList)
-                        break
+
         if slotList == []:
             return
         else:
@@ -67,7 +67,7 @@ class Game:
                     if boardSlot.card != None:
                         if self.selectedSlot != None:
                             ##TODO test whether move is appropriate
-                            self.deselect_slot()
+                            self.update_selected_slot(boardSlot)
                         else:
                             self.update_selected_slot(boardSlot)
                     return
@@ -116,6 +116,7 @@ class Game:
         if self.selectedSlot == newSlot:
             self.deselect_slot()
         else:
+            self.deselect_slot()
             newSlot.selected = True
             self.selectedSlot = newSlot
 
