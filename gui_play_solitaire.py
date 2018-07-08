@@ -16,6 +16,8 @@ class Game:
         self.boardMatrix = self.initial_board_setup()
         self.selectedSlot = None
 
+        self.startStack = None
+
         self.trash = []
 
     def main_loop(self):
@@ -55,7 +57,7 @@ class Game:
     def evaluate_board_slots_clicked(self, slotList):
 
         if slotList[0].boardMatrixRow == 0:
-            if len(slotList) == 1:
+            if len(slotList) == 1 and not slotList[0].inFlop:
                 boardSlot = slotList[0]
                 if boardSlot.inDeck:
                     self.deselect_slot()
@@ -67,7 +69,12 @@ class Game:
                     if boardSlot.card != None:
                         if self.selectedSlot != None:
                             ##TODO test whether move is appropriate
-                            self.update_selected_slot(boardSlot)
+                            properMove = self.check_move_validity(boardSlot)
+                            if properMove:
+                                self.make_move(boardSlot)
+                                self.deselect_slot()
+                            else:
+                                self.update_selected_slot(boardSlot)
                         else:
                             self.update_selected_slot(boardSlot)
                     return
@@ -80,25 +87,121 @@ class Game:
                         self.update_selected_slot(boardSlot)
                         return
 
-
-            '''
-            else:
-                if boardSlot.card != None and not boardSlot.hidden:
-                    if self.selectedSlot == None:
-                        boardSlot.selected = True
-                        self.selectedSlot = boardSlot
-
-                    else:
-                        ## TODO test whether move is appropriate
-                        self.deselect_slot()
-            '''
         ### Finally check for those slots that are in the rows
         else:
             boardSlot = self.find_appropriate_board_card(slotList)
             if boardSlot is None:
                 return
-            self.update_selected_slot(boardSlot)
 
+            if self.selectedSlot != None:
+                ##TODO test whether move is appropriate
+                properMove = self.check_move_validity(boardSlot)
+                if properMove:
+                    self.make_move(boardSlot)
+                    self.deselect_slot()
+                else:
+                    self.update_selected_slot(boardSlot)
+            else:
+                self.update_selected_slot(boardSlot)
+
+    def make_move(self, destSlot):
+
+        # Clean up the destination
+        destRow = destSlot.boardMatrixRow
+        destCol = destSlot.boardMatrixColumn
+        if destSlot.inPile:
+            self.boardMatrix[destRow][destCol].card = self.selectedSlot.card
+        else:
+            allStartCards = [self.selectedSlot] + self.startStack
+            for slotCard in allStartCards:
+                destRow += 1
+                self.boardMatrix[destRow][destCol].card = slotCard.card
+                self.boardMatrix[destRow][destCol].covered = True
+                self.boardMatrix[destRow][destCol].hidden = False
+            self.boardMatrix[destRow][destCol].covered = False
+
+        # Clean up the start
+        startRow = self.selectedSlot.boardMatrixRow
+        startCol = self.selectedSlot.boardMatrixColumn
+
+        if self.selectedSlot.inPile:
+            if self.selectedSlot.card.suit == "A":
+                self.boardMatrix[startRow][startCol].card = None
+
+            else:
+                suit = self.selectedSlot.card.suit
+                newDenom = self.deck.cardOrder[self.deck.cardOrder.index(self.selectedSlot.card.denom)-1]
+                newCard = "{}-{}".format(newDenom, suit)
+                self.boardMatrix[startRow][startCol].card = Graphic_Card(newCard)
+                self.boardMatrix[startRow][startCol].hidden = False
+                self.boardMatrix[startRow][startCol].covered = False
+        else:
+            self.boardMatrix[startRow - 1][startCol].hidden = False
+            allStartCards = [self.selectedSlot] + self.startStack
+            for slotCard in allStartCards:
+                startRow += 1
+                self.boardMatrix[startRow][startCol].card = None
+
+
+
+
+
+        # Uncover cards
+
+
+
+
+
+
+    def check_move_validity(self, destSlot):
+
+        if self.selectedSlot.inPile and destSlot.inPile:
+            return False
+
+        if destSlot.covered:
+            return False
+
+        self.startStack = self.find_stack_cards()
+
+        if destSlot.inPile:
+            if startStack != []:
+                return False
+            else:
+                if destSlot.card == None and self.selectedSlot.card.denom != "A":
+                    return False
+                elif self.selectedSlot.card.suit != destSlot.card.suit:
+                    return False
+                elif self.deck.cardOrder.index(self.selectedSlot.card.denom) != self.deck.cardOrder.index(destSlot.card.denom) + 1:
+                    return False
+
+        elif destSlot.boardMatrixRow == 1 and self.selectedSlot.card.denom != "K":
+            return False
+
+        elif self.selectedSlot.card.color == destSlot.card.color:
+            return False
+
+        elif self.deck.cardOrder.index(self.selectedSlot.card.denom) != self.deck.cardOrder.index(destSlot.card.denom) - 1:
+            return False
+
+        return True
+
+    def find_stack_cards(self):
+
+        stackSlots = []
+
+        if self.selectedSlot.inFlop or self.selectedSlot.inPile:
+            return []
+
+        rowInScope = self.selectedSlot.boardMatrixRow + 1
+        colInScope = self.selectedSlot.boardMatrixColumn
+        slot = self.boardMatrix[rowInScope][colInScope]
+
+        while slot.card != None:
+            stackSlots.append(slot)
+            rowInScope += 1
+            slot = self.boardMatrix[rowInScope][colInScope]
+
+        return stackSlots
 
     def find_appropriate_board_card(self, slotList):
         ## I want to select out the highest row number that has an uncovered card
@@ -110,7 +213,6 @@ class Game:
             else:
                 return boardSlot
 
-
     def update_selected_slot(self, newSlot):
 
         if self.selectedSlot == newSlot:
@@ -119,7 +221,6 @@ class Game:
             self.deselect_slot()
             newSlot.selected = True
             self.selectedSlot = newSlot
-
 
     def deselect_slot(self):
         if self.selectedSlot != None:
@@ -194,49 +295,6 @@ class Game:
 
         return boardMatrix
 
-    def main_menu(self):
-
-        choice = None
-
-        while 1:
-
-            self.board_render(self.player)
-
-            if self.game_over() == True:
-                print "Hurray, you have won! Congratulations"
-                sys.exit()
-
-            choice = str(raw_input('''Main Menu:
-            M: Move Card
-            T: Turn New Flop
-            Q: Quit
-            '''))
-
-            choice = choice.lower()
-
-            if choice not in ["m", "t", "q"]:
-                print "Error: Invalid choice! Please try again."
-                continue
-
-
-            if choice == "m":
-                ## Card To Move
-                userCardInput = self.get_card_inputs()
-
-                if userCardInput is None:
-                    continue
-
-                startInput = userCardInput[0]
-                destInput = userCardInput[1]
-
-                self.move_board_card(startInput,destInput)
-
-            elif choice == "t":
-                self.new_flop()
-
-            else:
-                print "Error: Invalid choice! Please try again."
-
     def new_flop(self):
         # clear current flop
         for loc in self.flop:
@@ -264,30 +322,6 @@ class Game:
             newFlopCard = Graphic_Card(self.deck.deck.pop(0))
             loc.card = newFlopCard
 
-    def get_card_inputs(self):
-        pileCommands = ["pile", "p"]
-        suits = ["h", "c", "s", "d"]
-
-        startInput = str(raw_input("Which card would you like to move? Please either give the column index, pile (p), or flop (f):"))
-        if startInput.lower() in pileCommands:
-
-            pileSuit = str(raw_input("Which suit pile would you like to move a card from? Please give the suit (s,c,d, or h):"))
-            if pileSuit.lower() not in suits:
-                print "Error: This suit does not exist. Please try again"
-                return
-
-            else:
-                startInput = "P-{}".format(pileSuit.lower())
-
-        ## Destination Card
-        destInput = str(raw_input("Where would you like to move the card? Please give a column or pile (p):"))
-
-        if startInput == "" or destInput == "":
-            print "Error: No input given for one of the inputs. Please try again."
-            return
-
-        return [startInput, destInput]
-
     def board_render(self):
 
         for row in self.boardMatrix:
@@ -295,15 +329,6 @@ class Game:
                 boardSlot.show_image(self.gameDisplay)
 
         pygame.display.update()
-
-    def move_board_card(self, userLocationInput, userDestinationInput):
-
-        try:
-            move = CardMovement(self, userLocationInput, userDestinationInput)
-            move.make_move()
-        except MovementError:
-            print "Error: Movement failed."
-            return
 
     def game_over(self):
         if self.boardMatrix[0][4] == "K(H)" and self.boardMatrix[0][5] == "K(S)" and\
@@ -315,31 +340,17 @@ class Game:
 
 class CardMovement:
 
-    def __init__(self, game, location, destination):
+    def __init__(self, game, destSlot):
 
         self.pileSuitDict = {"h":[0,3], "c":[0,5], "s":[0,4], "d":[0,6]}
         self.cardOrder = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
-        self.current_game = game
-        self.userStartLocInput = location
-        self.userDestLocInput = destination
+        self.game = game
+        self.startSlot = game.selectedSlot
+        self.destSlot = destSlot
 
-        self.startIsPile = False
-        self.destIsPile = False
+        self.ensure_valid_loc()
 
-        self.startLoc = None
-        self.destLoc = None
-
-        self.validStartLoc = self.ensure_valid_loc(start = True)
-        self.validDestLoc = self.ensure_valid_loc(start = False)
-
-        if self.validStartLoc is None or self.validDestLoc is None:
-            #print "Locations are not considered valid"
-            raise MovementError("Movement Object Failed")
-
-        if self.startIsPile and self.destIsPile:
-            #print "Both the start card and dest are piles"
-            raise MovementError("Movement Object Failed")
 
         self.startCard = None
         self.startCardStack = []
@@ -364,65 +375,19 @@ class CardMovement:
             self.find_dest_card()
             self.find_start_cards()
 
-    def ensure_valid_loc(self, start):
+    def ensure_compatible_loc(self, start):
 
-        inLoc = None
-        flopCommands = ["flop", "f"]
-        pileCommands = ["pile", "p"]
+        if self.startSlot.inPile and self.destSlot.inPile:
+            raise MovementError("Movement Object Failed")
 
-        if start == True:
-            inLoc = self.userStartLocInput
-        elif start == False:
-            inLoc = self.userDestLocInput
 
-        if inLoc.lower() in flopCommands:
-            if start == True:
-                return "FLOP"
-            else:
-                print "Error: Destination location cannot be the Flop. Please try again"
-                return None
-
-        if inLoc.lower()[0] in pileCommands:
-            if start == False:
-                self.destIsPile = True
-                self.destLoc = "PILE"
-                return True
-
-            else:
-                self.startIsPile = True
-                suitPile = inLoc[2]
-                startLoc = self.pileSuitDict[suitPile]
-                self.startLoc = startLoc
-                return True
-
-        else:
-            if len(inLoc) > 1:
-                print "Error: Malformed input. Please try again."
-                return
-
-            try:
-                col = int(inLoc)
-            except ValueError:
-                print "Error: Invalid position input"
-                return
-
-            if not -1 < col < 7:
-                print "Error: This column is out of range. Please try again."
-                return
-
-            if start == True:
-                self.startLoc = ["", col]
-            else:
-                self.destLoc = ["", col]
-
-        return True
 
     def find_start_cards(self):
 
         if self.startIsPile:
             self.startCardStack = []
             self.startCard = self.current_game.boardMatrix[self.startLoc[0]][self.startLoc[1]]
-            
+
             if len(self.startCard) == 1:
                 print "Error: There is no card in the chosen pile."
                 raise MovementError("Find Start Cards Failed")
@@ -692,12 +657,14 @@ class CardMovement:
 class CardDeck:
 
     def __init__(self):
-        deck = self.create_deck()
-        self.deck = deck
+
+        self.cardOrder = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+        self.deck = self.create_deck()
 
     def create_deck(self):
+
         suits = ["H", "S", "C", "D"]
-        identities = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"]
+        identities = self.cardOrder
 
         deck = [""] * 52
         count = 0
@@ -820,8 +787,6 @@ class Board_Slot:
                 if self.selected:
                     gameDisplay.blit(self.selectedFrameImage, self.rect)
 
-
-
 class Graphic_Card:
 
     def __init__(self, cardInfo):
@@ -855,9 +820,15 @@ class Graphic_Card:
         cardInfoList = self.cardInfo.strip().split('-')
         print cardInfoList
         self.suit = cardInfoList[1]
+        self.color = self.find_card_color()
         self.denom = cardInfoList[0]
         self.suitImage = pygame.image.load(self.suitImagesDict[self.cardInfo]).convert()
         self.cardBackImage = pygame.image.load('Images/playing_card_back_standard.png').convert()
+
+    def find_card_color(self):
+        colorDict = {'H': 'R', 'S': 'B', 'C': 'B', 'D': 'R'}
+        color = colorDict[self.suit]
+        return color
 
 class MovementError(Exception):
     pass
