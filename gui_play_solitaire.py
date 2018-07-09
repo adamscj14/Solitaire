@@ -71,6 +71,7 @@ class Game:
                             ##TODO test whether move is appropriate
                             properMove = self.check_move_validity(boardSlot)
                             if properMove:
+                                print "proper move"
                                 self.make_move(boardSlot)
                                 self.deselect_slot()
                             else:
@@ -97,9 +98,11 @@ class Game:
                 ##TODO test whether move is appropriate
                 properMove = self.check_move_validity(boardSlot)
                 if properMove:
+                    print "THIS MOVE IS VALID"
                     self.make_move(boardSlot)
                     self.deselect_slot()
                 else:
+                    print "INVALID MOVE"
                     self.update_selected_slot(boardSlot)
             else:
                 self.update_selected_slot(boardSlot)
@@ -111,8 +114,14 @@ class Game:
         destCol = destSlot.boardMatrixColumn
         if destSlot.inPile:
             self.boardMatrix[destRow][destCol].card = self.selectedSlot.card
+            self.boardMatrix[destRow][destCol].hidden = False
+            self.boardMatrix[destRow][destCol].covered = False
+
         else:
             allStartCards = [self.selectedSlot] + self.startStack
+            if destSlot.card == None:
+                destRow -= 1
+
             for slotCard in allStartCards:
                 destRow += 1
                 self.boardMatrix[destRow][destCol].card = slotCard.card
@@ -127,6 +136,8 @@ class Game:
         if self.selectedSlot.inPile:
             if self.selectedSlot.card.suit == "A":
                 self.boardMatrix[startRow][startCol].card = None
+                self.boardMatrix[startRow][startCol].hidden = True
+                self.boardMatrix[startRow][startCol].covered = True
 
             else:
                 suit = self.selectedSlot.card.suit
@@ -135,52 +146,67 @@ class Game:
                 self.boardMatrix[startRow][startCol].card = Graphic_Card(newCard)
                 self.boardMatrix[startRow][startCol].hidden = False
                 self.boardMatrix[startRow][startCol].covered = False
+
+        elif self.selectedSlot.inFlop:
+            self.queue_flop_positions()
+
         else:
             self.boardMatrix[startRow - 1][startCol].hidden = False
+            self.boardMatrix[startRow - 1][startCol].covered = False
             allStartCards = [self.selectedSlot] + self.startStack
             for slotCard in allStartCards:
-                startRow += 1
                 self.boardMatrix[startRow][startCol].card = None
+                startRow += 1
 
 
+    def queue_flop_positions(self):
 
+        flopSlotThree = self.boardMatrix[0][1]
+        flopSlotTwo = self.boardMatrix[0][2]
+        flopSlotOne = self.boardMatrix[0][3]
 
-
-        # Uncover cards
-
-
-
-
-
+        self.boardMatrix[0][3].card = flopSlotTwo.card
+        self.boardMatrix[0][2].card = flopSlotThree.card
+        self.boardMatrix[0][1].card = None
 
     def check_move_validity(self, destSlot):
 
         if self.selectedSlot.inPile and destSlot.inPile:
+            print "Error: Both selected locs are in the piles"
             return False
 
         if destSlot.covered:
+            print "Error: dest slot is covered up"
             return False
 
         self.startStack = self.find_stack_cards()
 
         if destSlot.inPile:
             if startStack != []:
+                print "Error: there can't be a stack if the dest is a pile"
                 return False
             else:
                 if destSlot.card == None and self.selectedSlot.card.denom != "A":
+                    print "Error: Can only move an ace to the none card"
                     return False
-                elif self.selectedSlot.card.suit != destSlot.card.suit:
+                elif self.selectedSlot.card.suit != destSlot.pileSuit:
+                    print "Error: pile suits are not identical"
                     return False
                 elif self.deck.cardOrder.index(self.selectedSlot.card.denom) != self.deck.cardOrder.index(destSlot.card.denom) + 1:
+                    print "Error: pile denominations are not consecutive"
                     return False
 
-        elif destSlot.boardMatrixRow == 1 and self.selectedSlot.card.denom != "K":
-            return False
+            return True
 
-        elif self.selectedSlot.card.color == destSlot.card.color:
+        elif destSlot.boardMatrixRow == 1 and self.selectedSlot.card.denom == "K":
+            return True
+
+        elif self.selectedSlot.card.color == destSlot.card.color and destSlot.card != None:
+            print "Error: These cards have the same color"
             return False
 
         elif self.deck.cardOrder.index(self.selectedSlot.card.denom) != self.deck.cardOrder.index(destSlot.card.denom) - 1:
+            print "Error: denominations are not consecutive"
             return False
 
         return True
@@ -207,7 +233,14 @@ class Game:
         ## I want to select out the highest row number that has an uncovered card
         for boardSlot in reversed(slotList):
             if boardSlot.card == None:
-                continue
+                if self.selectedSlot != None:
+                    if self.selectedSlot.card == "K":
+                        if boardSlot.boardMatrixRow == 1:
+                            boardSlot.covered = False
+                            boardSlot.hidden = False
+                            return boardSlot
+                else:
+                    continue
             elif boardSlot.hidden:
                 continue
             else:
