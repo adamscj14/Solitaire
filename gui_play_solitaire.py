@@ -1,9 +1,29 @@
 import random
-import pandas as pd
 import sys
-import numpy as np
 import pygame
 import time
+
+def main():
+
+    pygame.init()
+
+    # Set window
+    displayWidth = 800
+    displayHeight = 725
+
+    black = (0, 0, 0)
+    green = (0, 128, 0)
+
+    gameDisplay = pygame.display.set_mode((displayWidth, displayHeight))
+    gameDisplay.fill(green)
+    pygame.display.set_caption("Solitaire")
+    gameDisplay.set_colorkey(black)
+
+    Game(gameDisplay).main_loop()
+
+    pygame.quit()
+    sys.exit()
+
 
 class Game:
 
@@ -30,7 +50,10 @@ class Game:
             self.event_loop()
             self.gameDisplay.fill(green)
             self.board_render()
+            gameExit = self.check_game_over()
             pygame.time.Clock().tick(60)
+
+        self.win_sequence(green)
 
     def event_loop(self):
 
@@ -53,10 +76,13 @@ class Game:
         else:
             self.evaluate_board_slots_clicked(slotList)
 
-
     def evaluate_board_slots_clicked(self, slotList):
 
         if slotList[0].boardMatrixRow == 0:
+
+            if slotList[0].newGame:
+                self.reset_game()
+
             if len(slotList) == 1 and not slotList[0].inFlop:
                 boardSlot = slotList[0]
                 if boardSlot.inDeck:
@@ -111,6 +137,21 @@ class Game:
             else:
                 self.update_selected_slot(boardSlot)
 
+    ## There must be a better way to do this...
+    def reset_game(self):
+
+        green = (0, 128, 0)
+        self.gameDisplay.fill(green)
+
+        self.deck = CardDeck()
+        self.flop = [None, None, None]
+        self.boardMatrix = self.initial_board_setup()
+        self.selectedSlot = None
+        self.startStack = None
+        self.trash = []
+
+        self.main_loop()
+
     def make_move(self, destSlot):
 
         # Clean up the destination
@@ -161,7 +202,6 @@ class Game:
             for slotCard in allStartCards:
                 self.boardMatrix[startRow][startCol].card = None
                 startRow += 1
-
 
     def queue_flop_positions(self):
 
@@ -273,7 +313,7 @@ class Game:
         self.deck.shuffle_deck()
 
         boardMatrix = [
-            ["X", "X", "X", "X", "H", "S", "C", "D"],
+            ["X", "X", "X", "X", "H", "S", "C", "D", "N"],
             ["X", "X", "X", "X", "X", "X", "X"],
             ["-", "X", "X", "X", "X", "X", "X"],
             ["-", "-", "X", "X", "X", "X", "X"],
@@ -308,6 +348,8 @@ class Game:
                 boardMatrix[0][5] = Board_Slot(card=None, row=0, col=5, inPile=True, pileSuit = "S")
                 boardMatrix[0][6] = Board_Slot(card=None, row=0, col=6, inPile=True, pileSuit = "C")
                 boardMatrix[0][7] = Board_Slot(card=None, row=0, col=7, inPile=True, pileSuit = "D")
+
+                boardMatrix[0][8] = Board_Slot(card=None, row=0, col=7, newGame=True)
 
                 rowCount += 1
                 continue
@@ -370,329 +412,24 @@ class Game:
 
         pygame.display.update()
 
-    def game_over(self):
-        if self.boardMatrix[0][4] == "K(H)" and self.boardMatrix[0][5] == "K(S)" and\
-                self.boardMatrix[0][6] == "K(C)" and self.boardMatrix[0][7] == "K(D)":
-            return True
-        else:
-            return False
-
-
-class CardMovement:
-
-    def __init__(self, game, destSlot):
-
-        self.pileSuitDict = {"h":[0,3], "c":[0,5], "s":[0,4], "d":[0,6]}
-        self.cardOrder = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-
-        self.game = game
-        self.startSlot = game.selectedSlot
-        self.destSlot = destSlot
-
-        self.ensure_valid_loc()
-
-
-        self.startCard = None
-        self.startCardStack = []
-        self.destCard = None
-
-        self.startCardDetails = None
-        self.destCardDetails = None
-
-        self.populate_card_info()
-
-        if self.startCard is None or self.destCard is None:
-            #print "Start Card or Dest Card do not exist"
-            raise MovementError("Movement Object Failed")
-
-    def populate_card_info(self):
-        # If the destination is the pile, then first I need to find the start cards
-        if self.destIsPile == True:
-            self.find_start_cards()
-            self.find_dest_card()
-
-        else:
-            self.find_dest_card()
-            self.find_start_cards()
-
-    def ensure_compatible_loc(self, start):
-
-        if self.startSlot.inPile and self.destSlot.inPile:
-            raise MovementError("Movement Object Failed")
-
-
-
-    def find_start_cards(self):
-
-        if self.startIsPile:
-            self.startCardStack = []
-            self.startCard = self.current_game.boardMatrix[self.startLoc[0]][self.startLoc[1]]
-
-            if len(self.startCard) == 1:
-                print "Error: There is no card in the chosen pile."
-                raise MovementError("Find Start Cards Failed")
-
-            self.find_card_details(start=True)
-            return
-
-        elif self.validStartLoc == "FLOP":
-            try:
-                self.startCard = self.current_game.flop[0]
-
-            except IndexError:
-                #print "Error: There are no cards in the flop. Please try again."
-                raise MovementError("Find Start Cards Failed")
-
-            self.startCardStack = []
-            self.startLoc = "FLOP"
-            self.find_card_details(start=True)
-            return
-
-        else:
-            col = self.startLoc[1]
-
-            if self.destIsPile:
-                possibleRows = range(1, 20)
-                for row in possibleRows:
-                    card = self.current_game.boardMatrix[row][col]
-                    if card == "-":
-                        if row == 1:
-                            print "Error: Given column has no cards to move. Please try again."
-                            raise MovementError("Movement Object Failed")
-                        else:
-                            self.startCard = self.current_game.boardMatrix[row - 1][col]
-                            self.startCardStack = []
-                            self.startLoc[0] = row - 1
-                            self.find_card_details(start=True)
-                            return
-
-            else:
-                ###### Otherwise need to find the optimal start that fits the destination... might want to break these into mini functions
-                ### Have to assume the dest card is already known
-
-                possibleRows = range(1, 20)
-                for row in possibleRows:
-                    card = self.current_game.boardMatrix[row][col]
-                    if card == "-":
-                        if row == 1:
-                            print "Error: This column of the board has no cards to be moved."
-                            self.startCard = None
-                            raise MovementError("Movement Object Failed")
-                        else:
-                            print "Error: There are no potential cards to be moved in this column."
-                            self.startCard = None
-                            raise MovementError("Movement Object Failed")
-                    elif card[0] == "H":
-                        continue
-
-                    # Now check for any compatible cards
-                    else:
-
-                        self.startCard = card
-                        self.find_card_details(start=True)
-                        if self.check_move_validity(supressPrint=True) == True:
-                            self.startLoc[0] = row
-                            break
-
-                potentialStackIndices = range(row+1,20)
-                for pos in potentialStackIndices:
-                    stackCard = self.current_game.boardMatrix[pos][col]
-                    if stackCard[0] != "-":
-                        self.startCardStack.append(stackCard)
-                    else:
-                        break
-
-    def find_dest_card(self):
-
-        if self.destIsPile:
-            startSuit = self.startCardDetails[1].lower()
-            self.destLoc = self.pileSuitDict[startSuit]
-            self.destCard = self.current_game.boardMatrix[self.destLoc[0]][self.destLoc[1]]
-            self.find_card_details(start=False)
-            return
-
-        else:
-            col = self.destLoc[1]
-
-            possibleRows = range(1,20)
-
-            for row in possibleRows:
-                card = self.current_game.boardMatrix[row][col]
-                if card == "-":
-                    if row == 1:
-                        row = row + 1
-
-                    self.destCard = self.current_game.boardMatrix[row - 1][col]
-                    self.destLoc[0] = row - 1
-                    self.find_card_details(start=False)
-                    return
-
-    def find_card_details(self, start):
-
-        cardSuitDict = {"H": "R", "D": "R", "C": "B", "S": "B", "-": "-"}
-
-        card = None
-
-        if start == True:
-            card = self.startCard
-        elif start == False:
-            card = self.destCard
-            if len(card) == 1:
-                cardColor = cardSuitDict[card]
-
-                self.destCardDetails = [card, card, cardColor]
-                return
-
-        cardSuit = card[-2]
-        cardColor = cardSuitDict[cardSuit]
-
-        cardList = card.strip().split('(')
-        cardDenom = cardList[0]
-
-        if start == True:
-            self.startCardDetails = [cardDenom, cardSuit, cardColor]
-
-        elif start == False:
-            self.destCardDetails = [cardDenom, cardSuit, cardColor]
-
-    def check_move_validity(self, supressPrint):
-        # TODO should probably make cleaner
-
-        startCardDenom = self.startCardDetails[0]
-        startCardSuit = self.startCardDetails[1]
-        startCardColor = self.startCardDetails[2]
-
-        destCardDenom = self.destCardDetails[0]
-        destCardSuit = self.destCardDetails[1]
-        destCardColor = self.destCardDetails[2]
-
-        if self.destLoc[0] == 0:
-            # Same suit
-            if startCardSuit != destCardSuit:
-                print "Error: Incompatible suits -- this card cannot be moved to the {} pile.".format(destCardSuit)
-                return False
-            # Is it an A?
-            elif startCardDenom == "A":
+    def check_game_over(self):
+        if self.trash == [] and self.flop == []:
+            if self.boardMatrix[0][4].card.denom == "K" and self.boardMatrix[0][5].card.denom == "K" and\
+                self.boardMatrix[0][6].card.denom == "K" and self.boardMatrix[0][7].card.denom == "K":
                 return True
-            # If not an A, does it follow the correct card?
-
-            elif destCardDenom in ["C", "H", "D", "S"]:
-                print "Error: Incompatible card denominations -- this card cannot be moved to the {} pile".format(destCardSuit)
-                return False
-
-            elif self.cardOrder.index(destCardDenom) != self.cardOrder.index(startCardDenom) - 1:
-                print "Error: Incompatible card denominations -- this card cannot be moved to the {} pile".format(destCardSuit)
-                return False
-
-        elif self.destLoc[0] == 1 and self.destCard == "-" and self.startCardDetails[0] == "K":
-            return True
-
-        elif self.current_game.boardMatrix[self.destLoc[0]+1][self.destLoc[1]] != "-":
-            if not supressPrint:
-                print "Error: Cannot move card into the middle of stack."
-            return False
-
-        elif startCardColor == destCardColor:
-            if not supressPrint:
-                print "Error: These cards are incompatible (same color)."
-            return False
-        else:
-            if self.cardOrder.index(destCardDenom) != self.cardOrder.index(startCardDenom) + 1:
-                if not supressPrint:
-                    print "Error: Denominations are not consecutive"
-                return False
-
-        return True
-
-    def make_move(self):
-
-        if self.check_move_validity(supressPrint=False) == False:
-            raise MovementError("This move is not valid")
-
-        ## remove Flop card
-        if self.startLoc == "FLOP":
-            self.current_game.flop.pop(0)
-
-            columnDestIndex = self.destLoc[1]
-            rowDestIndex = self.destLoc[0]
-
-            # For Aces and Kings
-            if not (rowDestIndex == 0 or (rowDestIndex == 1 and self.startCardDetails[0] == "K")):
-                rowDestIndex += 1
-
-            # Change dest locus
-            self.current_game.boardMatrix[rowDestIndex][columnDestIndex] = self.startCard
-            return
-
-        ## remove pile card
-        elif self.startLoc[0] == 0:
-
-            if self.startCardDetails[0] == "A":
-                self.current_game.boardMatrix[0][self.startLoc[1]] = self.startCardDetails[1]
-
             else:
-                newDenom = self.cardOrder[self.cardOrder.index(self.startCardDetails[0])-1]
-                suit = self.startCardDetails[1]
-                newCard = "{}({})".format(newDenom, suit)
-                self.current_game.boardMatrix[0][self.startLoc[1]] = newCard
+                return False
 
+    def win_sequence(self):
+        time.sleep(3)
+        self.gameDisplay.fill((0, 0, 0))
+        youWinImage = pygame.image.load("Images/winImage.png")
+        self.gameDisplay.blit(youWinImage, (75,200))
+        pygame.display.update()
 
-
-            columnDestIndex = self.destLoc[1]
-            rowDestIndex = self.destLoc[0] + 1
-
-            # Change dest locus
-            self.current_game.boardMatrix[rowDestIndex][columnDestIndex] = self.startCard
-
-
-        ## remove board cards and move it to a new location
-        else:
-
-            columnDestIndex = self.destLoc[1]
-
-            columnStartIndex = self.startLoc[1]
-            rowStartIndex = self.startLoc[0]
-
-            ## With the exception of destination loci being the piles, the rest of the moves follow the same pattern
-            if self.destLoc[0] == 0:
-                self.current_game.boardMatrix[0][columnDestIndex] = self.startCard
-                self.current_game.boardMatrix[rowStartIndex][columnStartIndex] = "-"
-
-            else:
-                cards = [self.startCard] + self.startCardStack
-                destCount = 1
-                startCount = 0
-                if self.destLoc[0] == 1 and self.destCard == "-":
-                    destCount -= 1
-
-                for card in cards:
-
-                    columnDestIndex = self.destLoc[1]
-                    rowDestIndex = self.destLoc[0] + destCount
-
-                    columnStartIndex = self.startLoc[1]
-                    rowStartIndex = self.startLoc[0] + startCount
-
-                    # Change dest locus
-                    self.current_game.boardMatrix[rowDestIndex][columnDestIndex] = card
-                    # Remove moving cards from start positions
-                    self.current_game.boardMatrix[rowStartIndex][columnStartIndex] = "-"
-
-                    destCount += 1
-                    startCount += 1
-
-
-        ## Finally, flip over any cards that should now be visible
-        if self.startLoc == "FLOP":
-            return
-
-        if self.startLoc[0] >= 2:
-
-            cardInScope = self.current_game.boardMatrix[self.startLoc[0]-1][self.startLoc[1]]
-
-            if cardInScope[0:2] == "H:":
-                self.current_game.boardMatrix[self.startLoc[0] - 1][self.startLoc[1]] = cardInScope[2:]
-
+        time.sleep(5)
+        pygame.quit()
+        sys.exit()
 
 class CardDeck:
 
@@ -734,7 +471,7 @@ class CardDeck:
 
 class Board_Slot:
 
-    def __init__(self, card, row, col, inDeck=False, inPile=None, pileSuit=None, inFlop=False, flopPosition=None):
+    def __init__(self, card, row, col, inDeck=False, inPile=None, pileSuit=None, inFlop=False, newGame=False, flopPosition=None):
 
         self.card = card
         self.boardMatrixRow = row
@@ -761,6 +498,9 @@ class Board_Slot:
 
         self.pileSuit = pileSuit
         self.pileImage = None
+
+        self.newGame = newGame
+        self.newGameImage = pygame.image.load('Images/newGame.png')
 
         self.deckImage = pygame.image.load('Images/deckCard.png')
         self.size = self.deckImage.get_size()
@@ -801,6 +541,10 @@ class Board_Slot:
                 rectLocX = pilePositionDict[self.pileSuit]
                 rectLocY = 15
 
+            elif self.newGame:
+                rectLocX = 6 * xMultiplier + row1x + 150
+                rectLocY = 15
+
         else:
 
             rectLocX = xMultiplier * self.boardMatrixColumn + row1x
@@ -822,6 +566,9 @@ class Board_Slot:
 
             elif self.inDeck:
                 gameDisplay.blit(self.deckImage, self.rect)
+
+            elif self.newGame:
+                gameDisplay.blit(self.newGameImage, self.rect)
 
         else:
             if self.hidden:
@@ -873,57 +620,6 @@ class Graphic_Card:
         colorDict = {'H': 'R', 'S': 'B', 'C': 'B', 'D': 'R'}
         color = colorDict[self.suit]
         return color
-
-class MovementError(Exception):
-    pass
-
-
-def main():
-
-    pygame.init()
-
-    # Set window
-    displayWidth = 800
-    displayHeight = 725
-
-    black = (0, 0, 0)
-    white = (255, 255, 255)
-    red = (255, 0, 0)
-    green = (0, 128, 0)
-
-    gameDisplay = pygame.display.set_mode((displayWidth, displayHeight))
-    gameDisplay.fill(green)
-    pygame.display.set_caption("Solitaire")
-    gameDisplay.set_colorkey(black)
-
-    Game(gameDisplay).main_loop()
-
-    pygame.quit()
-    sys.exit()
-
-## card width = 1
-## card height = 1.53
-
-
-
-def message_display(text):
-    largeText = pygame.font.Font('freesansbold.ttf', 115)
-    textSurface, textRectangle = text_objects(text, largeText)
-    textRectangle.center = ((displayyWidth / 2), (displayHeight / 2))
-    gameDisplay.blit(textSurface, textRectangle)
-
-    pygame.display.update()
-
-    time.sleep(2)
-
-    game_loop()
-
-
-def text_objects(text, font):
-    textSurface = font.render(text, True, black)
-    return textSurface, textSurface.get_rect()
-
-
 
 
 if __name__ == "__main__":
