@@ -240,10 +240,11 @@ class Game:
         for boardSlot in reversed(slotList):
             if boardSlot.card == None:
                 if self.selectedSlot != None:
-                    if self.selectedSlot.card == "K":
+                    if self.selectedSlot.card.denom == "K":
                         if boardSlot.boardMatrixRow == 1:
                             boardSlot.covered = False
                             boardSlot.hidden = False
+                            print "Possible king movement!"
                             return boardSlot
                 else:
                     continue
@@ -779,7 +780,7 @@ class Board_Slot:
     def get_display_coords(self):
 
         xMultiplier = 75
-        yMultiplier = 30
+        yMultiplier = 27
 
         row1y = 100
         row1x = 100
@@ -883,7 +884,7 @@ def main():
 
     # Set window
     displayWidth = 800
-    displayHeight = 600
+    displayHeight = 725
 
     black = (0, 0, 0)
     white = (255, 255, 255)
