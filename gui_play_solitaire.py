@@ -66,18 +66,22 @@ class Game:
 
                 elif boardSlot.inPile:
                     print "pile"
-                    if boardSlot.card != None:
-                        if self.selectedSlot != None:
-                            ##TODO test whether move is appropriate
-                            properMove = self.check_move_validity(boardSlot)
-                            if properMove:
-                                print "proper move"
-                                self.make_move(boardSlot)
-                                self.deselect_slot()
-                            else:
-                                self.update_selected_slot(boardSlot)
+                    if self.selectedSlot == None and boardSlot.card != None:
+                        self.update_selected_slot(boardSlot)
+
+                    elif self.selectedSlot == None and boardSlot.card == None:
+                        return
+
+                    else:
+                        ##TODO test whether move is appropriate
+                        properMove = self.check_move_validity(boardSlot)
+                        if properMove:
+                            print "proper move"
+                            self.make_move(boardSlot)
+                            self.deselect_slot()
                         else:
                             self.update_selected_slot(boardSlot)
+
                     return
 
 
@@ -134,7 +138,7 @@ class Game:
         startCol = self.selectedSlot.boardMatrixColumn
 
         if self.selectedSlot.inPile:
-            if self.selectedSlot.card.suit == "A":
+            if self.selectedSlot.card.denom == "A":
                 self.boardMatrix[startRow][startCol].card = None
                 self.boardMatrix[startRow][startCol].hidden = True
                 self.boardMatrix[startRow][startCol].covered = True
@@ -182,7 +186,8 @@ class Game:
         self.startStack = self.find_stack_cards()
 
         if destSlot.inPile:
-            if startStack != []:
+            print "dest slot in pile"
+            if self.startStack != []:
                 print "Error: there can't be a stack if the dest is a pile"
                 return False
             else:
@@ -192,9 +197,10 @@ class Game:
                 elif self.selectedSlot.card.suit != destSlot.pileSuit:
                     print "Error: pile suits are not identical"
                     return False
-                elif self.deck.cardOrder.index(self.selectedSlot.card.denom) != self.deck.cardOrder.index(destSlot.card.denom) + 1:
-                    print "Error: pile denominations are not consecutive"
-                    return False
+                elif destSlot.card != None:
+                    if self.deck.cardOrder.index(self.selectedSlot.card.denom) != self.deck.cardOrder.index(destSlot.card.denom) + 1:
+                        print "Error: pile denominations are not consecutive"
+                        return False
 
             return True
 
@@ -748,6 +754,10 @@ class Board_Slot:
 
 
         self.inPile = inPile
+        if self.inPile:
+            self.covered = False
+            self.hidden = False
+
         self.pileSuit = pileSuit
         self.pileImage = None
 
@@ -911,6 +921,8 @@ def message_display(text):
 def text_objects(text, font):
     textSurface = font.render(text, True, black)
     return textSurface, textSurface.get_rect()
+
+
 
 
 if __name__ == "__main__":
