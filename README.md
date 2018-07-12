@@ -1,12 +1,11 @@
 # Solitaire
 Solitaire Game
 
-To play, simply run the "play_solitaire_commandline.py" script without any arguments.
+To play, simply run the "commandline_play_solitaire.py" to run the commandline version or "gui_play_solitaire.py" for a graphical user interface.
 
 Gameplay notes:
   * There definitely might still be a few bugs/kinks to work out
+  * Both should work at this point
   
 Future directions:
-  * Adding graphics and point and click mechanics
   * Hosting game on python server to receive http commands
-  * play_solitaire_gui.py is currently still a work in progress
