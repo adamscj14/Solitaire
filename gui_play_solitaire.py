@@ -82,6 +82,7 @@ class Game:
 
             if slotList[0].newGame:
                 self.reset_game()
+                return
 
             if len(slotList) == 1 and not slotList[0].inFlop:
                 boardSlot = slotList[0]
@@ -92,11 +93,13 @@ class Game:
 
                 elif boardSlot.inPile:
                     print "pile"
-                    if self.selectedSlot == None and boardSlot.card != None:
-                        self.update_selected_slot(boardSlot)
+                    if self.selectedSlot == None:
 
-                    elif self.selectedSlot == None and boardSlot.card == None:
-                        return
+                        if boardSlot.card != None:
+                            self.update_selected_slot(boardSlot)
+
+                        elif boardSlot.card == None:
+                            return
 
                     else:
                         ##TODO test whether move is appropriate
@@ -149,8 +152,6 @@ class Game:
         self.selectedSlot = None
         self.startStack = None
         self.trash = []
-
-        self.main_loop()
 
     def make_move(self, destSlot):
 
@@ -219,6 +220,12 @@ class Game:
             print "Error: Both selected locs are in the piles"
             return False
 
+        if destSlot.card == None and not destSlot.inPile:
+            if destSlot.boardMatrixRow == 1 and self.selectedSlot.card.denom == "K":
+                return True
+            else:
+                return False
+
         if destSlot.covered:
             print "Error: dest slot is covered up"
             return False
@@ -227,6 +234,7 @@ class Game:
 
         if destSlot.inPile:
             print "dest slot in pile"
+            print self.selectedSlot.card.denom
             if self.startStack != []:
                 print "Error: there can't be a stack if the dest is a pile"
                 return False
@@ -242,9 +250,6 @@ class Game:
                         print "Error: pile denominations are not consecutive"
                         return False
 
-            return True
-
-        elif destSlot.boardMatrixRow == 1 and self.selectedSlot.card.denom == "K":
             return True
 
         elif self.selectedSlot.card.color == destSlot.card.color and destSlot.card != None:
@@ -278,22 +283,29 @@ class Game:
     def find_appropriate_board_card(self, slotList):
         ## I want to select out the highest row number that has an uncovered card
         for boardSlot in reversed(slotList):
-            if boardSlot.card == None:
-                if self.selectedSlot != None:
-                    if self.selectedSlot.card.denom == "K":
-                        if boardSlot.boardMatrixRow == 1:
-                            boardSlot.covered = False
-                            boardSlot.hidden = False
-                            print "Possible king movement!"
-                            return boardSlot
+            if boardSlot.card == None and boardSlot.boardMatrixRow == 1 and self.selectedSlot != None:
+                if self.selectedSlot.card.denom == "K":
+                    #boardSlot.covered = False
+                    #boardSlot.hidden = False
+                    print "Possible king movement!"
+                    return boardSlot
                 else:
                     continue
+
+            elif boardSlot.card == None:
+                continue
+
             elif boardSlot.hidden:
                 continue
+
             else:
                 return boardSlot
 
     def update_selected_slot(self, newSlot):
+
+        if newSlot.card == None:
+            self.deselect_slot()
+            return
 
         if self.selectedSlot == newSlot:
             self.deselect_slot()
