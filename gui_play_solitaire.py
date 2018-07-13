@@ -428,7 +428,8 @@ class Game:
         pygame.display.update()
 
     def check_game_over(self):
-        if self.trash == [] and self.flop == []:
+
+        if self.trash == [] and self.flop[0].card == None and self.flop[1].card == None and self.flop[2].card == None:
             if self.boardMatrix[0][4].card.denom == "K" and self.boardMatrix[0][5].card.denom == "K" and\
                 self.boardMatrix[0][6].card.denom == "K" and self.boardMatrix[0][7].card.denom == "K":
                 return True
