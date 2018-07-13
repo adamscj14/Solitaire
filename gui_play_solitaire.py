@@ -224,6 +224,7 @@ class Game:
 
         if destSlot.card == None and not destSlot.inPile:
             if destSlot.boardMatrixRow == 1 and self.selectedSlot.card.denom == "K":
+                self.startStack = self.find_stack_cards()
                 return True
             else:
                 return False
