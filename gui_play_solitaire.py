@@ -394,7 +394,7 @@ class Game:
 
     def new_flop(self):
         # clear current flop
-        for loc in self.flop:
+        for loc in reversed(self.flop):
             print "Current flop"
             if loc.card != None:
                 self.trash.append(loc.card.cardInfo)
@@ -411,11 +411,11 @@ class Game:
 
         posCount = 0
         print "Pick new flop"
-        for loc in self.flop:
+        for loc in reversed(self.flop):
             # if deck is empty
             if self.deck.deck_empty():
                 print "deck is empty"
-                break
+                return
             newFlopCard = Graphic_Card(self.deck.deck.pop(0))
             loc.card = newFlopCard
 
