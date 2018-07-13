@@ -167,6 +167,8 @@ class Game:
             allStartCards = [self.selectedSlot] + self.startStack
             if destSlot.card == None:
                 destRow -= 1
+            else:
+                destSlot.covered = True
 
             for slotCard in allStartCards:
                 destRow += 1
