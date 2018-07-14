@@ -53,7 +53,7 @@ class Game:
             gameExit = self.check_game_over()
             pygame.time.Clock().tick(60)
 
-        self.win_sequence(green)
+        self.win_sequence()
 
     def event_loop(self):
 
@@ -518,7 +518,7 @@ class Board_Slot:
         self.newGame = newGame
         self.newGameImage = pygame.image.load('Images/newGame.png')
 
-        self.deckImage = pygame.image.load('Images/deckCard.png')
+        self.deckImage = pygame.image.load('Images/playing_card_back_cat.png')
         self.size = self.deckImage.get_size()
 
         self.selectedFrameImage = pygame.image.load('Images/FrameImage.png')
@@ -630,7 +630,7 @@ class Graphic_Card:
         self.color = self.find_card_color()
         self.denom = cardInfoList[0]
         self.suitImage = pygame.image.load(self.suitImagesDict[self.cardInfo]).convert()
-        self.cardBackImage = pygame.image.load('Images/playing_card_back_standard.png').convert()
+        self.cardBackImage = pygame.image.load('Images/playing_card_back_cat.png').convert()
 
     def find_card_color(self):
         colorDict = {'H': 'R', 'S': 'B', 'C': 'B', 'D': 'R'}
