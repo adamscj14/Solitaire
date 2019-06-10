@@ -1,0 +1,12 @@
+#!/bin/bash
+
+ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cd $ScriptDir
+if [ ! -f Solitaire ]
+then
+    git clone https://github.com/adamscj14/Solitaire.git
+fi
+cd Solitaire
+git pull
+python gui_play_solitaire.py
